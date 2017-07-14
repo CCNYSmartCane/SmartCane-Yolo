@@ -1,0 +1,3 @@
+classes = 1
+train = train_list_heads.txt
+valid = test_list_heads.txt
