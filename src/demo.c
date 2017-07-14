@@ -51,9 +51,8 @@ typedef struct{
 }framewindow;
 
 typedef struct{
-    double x;
-    double y;
     char name;
+    box* detections;
 }centroid;
 
 static char **demo_names;
@@ -105,35 +104,10 @@ int sy;
 char* cluster_names;
 char max_name = 'a';
 
-void compare_centroids(centroid* cents_a, size_t size_a, centroid* cents_b, size_t size_b){
-    int k;
-    int l;
-    
-    double c_min = 0.012;
-    double c_tmp;
 
-    for(k = 0; k < size_a; ++k){    
-        c_min = 0.012;
-        for(l = 0; l < size_b; ++l){
-            c_tmp = sqrt(pow(cents_a[k].x-cents_b[l].x,2)+
-                         pow(cents_a[k].y-cents_b[l].y,2));       
-            if(c_tmp <= 0.012){
-              c_min = c_tmp;  
-              cents_a[k].name = cents_b[l].name; 
-            }
-        }
-        if(c_min == 0.012){
-            cents_a[k].name = max_name;
-            max_name++;
-        }
-        printf("cluster %c is shown\n",cents_a[k].name);      
-
-    }
-    return;
-}
 
 double* cluster(framewindow input, FILE *fp, FILE *fp2){
-    box detections[845];
+    //box detections[845];
     int s = 0;
     int t = 0;
     size_t total = input.size1+input.size2+input.size3
@@ -142,10 +116,10 @@ double* cluster(framewindow input, FILE *fp, FILE *fp2){
     int d_old[total];
     d_old[0] = 1000; //need this to overcome zero initialization
     
-    
+    box* detections = malloc(total*sizeof(box));
 
     double *centroids = malloc(2*input.size10*sizeof(double));           // [2*input.size3]; //double the orignal size (one for x, one for y)
-    //out = malloc(2*input.size10*sizeof(double));
+
 
     printf("intialized for clustering...\n");
 
@@ -237,8 +211,7 @@ double* cluster(framewindow input, FILE *fp, FILE *fp2){
 
         while(d[flag] == d_old[flag]){
             if(flag == total-1){
-                new_cents = malloc(input.size10*24); //alloc space for new_cents pointer
-
+              
                 for(s = 0; s < input.size10; ++s){
                     printf("total:%d\n",total);
                     printf("cluster number:%d\n",s+1);
@@ -248,9 +221,7 @@ double* cluster(framewindow input, FILE *fp, FILE *fp2){
                     //save final centroids to txt file 
                     fprintf(fp,"%d\t%f\t%f\n",count,centroids[2*s],centroids[2*s+1]);
 
-                    //save final centroids to new_cents pointer
-                    new_cents[s].x = centroids[2*s];
-                    new_cents[s].y = centroids[2*s+1];
+                    //save corresponding detections to centroid struct
                 }
                     fprintf(fp2,"done\n");
           
@@ -265,7 +236,7 @@ double* cluster(framewindow input, FILE *fp, FILE *fp2){
         }
         fprintf(fp2,"\n");
     }
-    
+    free(detections);
 }
 
 double get_wall_time()
@@ -370,29 +341,6 @@ void *detect_in_thread(void *ptr)
             memcpy(fw.frame10,bs,detects*sizeof(box));
             out = cluster(fw,fpa,fpb);
 
-            if(fw.init == 1){
-                free(old_cents);
-                old_cents = malloc(fw.size10*24);
-                memcpy(old_cents,new_cents,fw.size10*24);
-                free(new_cents);
-
-                //initialize names
-                printf("initializing names\n");
-                for(i = 0; i < fw.size10; ++i){
-                    old_cents[i].name = 'a' + i;
-                    max_name = (++max_name)%26;
-                }
-                printf("initialized names\n");
-            }
-
-            if(fw.init > 1){
-                compare_centroids(new_cents,fw.size10,old_cents,fw.size9);
-
-                free(old_cents);
-                old_cents = malloc(fw.size10*24);
-                memcpy(old_cents,new_cents,fw.size10*24);
-                free(new_cents);
-            }
 
             ++fw.init;
 
