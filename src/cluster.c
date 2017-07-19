@@ -15,8 +15,7 @@ void box_conversion(box* input, box_new*output, int counter){ //input output siz
     }
 }
 
-
-double* cluster(framewindow input, FILE *fp, FILE *fp2){
+centroid* cluster(framewindow input, FILE *fp, FILE *fp2){
     //box detections[845];
     int s = 0;
     int t = 0;
@@ -28,9 +27,9 @@ double* cluster(framewindow input, FILE *fp, FILE *fp2){
     
     box_new* detections = malloc(total*sizeof(box_new));
 
-    double *centroids = malloc(2*input.size10*sizeof(double));           // [2*input.size3]; //double the orignal size (one for x, one for y)
+    //double *centroids = malloc(2*input.size10*sizeof(double));           // [2*input.size3]; //double the orignal size (one for x, one for y)
 
-    centroid *final_cents = malloc(input.size10*sizeof(centroid));   //pointer for final centroids for comparison func
+    centroid *final_cents = malloc(input.size10*sizeof(centroid));   //pointer for final centroids
 
 
     printf("intialized for clustering...\n");
@@ -63,8 +62,11 @@ double* cluster(framewindow input, FILE *fp, FILE *fp2){
     
     /*INITIAL GUESSES FOR CENTROIDS*/
     for(s = 0; s < input.size10; ++s){
-        centroids[2*s] = input.frame10[s].detect.x;
-        centroids[2*s+1] = input.frame10[s].detect.y;
+        //centroids[2*s] = input.frame10[s].detect.x;
+        //centroids[2*s+1] = input.frame10[s].detect.y;
+        final_cents[s].x = input.frame10[s].detect.x;
+        final_cents[s].y = input.frame10[s].detect.y;        
+
         //printf("init x:%f\n",centroids[2*i]);
          //printf("init y:%f\n",centroids[2*i+1]);
     }
@@ -82,8 +84,8 @@ double* cluster(framewindow input, FILE *fp, FILE *fp2){
             double d_min = 99999.99;
             for(t = 0; t < input.size10; ++t){
                 //printf("x coord:%f\n",detections[s].x);
-                d_temp = (pow(detections[s].detect.x-centroids[2*t],2)+
-                              pow(detections[s].detect.y-centroids[2*t+1],2));
+                d_temp = (pow(detections[s].detect.x-final_cents[t].x,2)+
+                              pow(detections[s].detect.y-final_cents[t].y,2));
                 if(d_temp<d_min){
                     d[s] = t;
                     d_min = d_temp;
@@ -99,6 +101,7 @@ double* cluster(framewindow input, FILE *fp, FILE *fp2){
             double numer_x = 0.0;
             double numer_y = 0.0;
             double denom = 0.0;
+            int cent_counter = 0;
             //printf("Total detections: %d\n",total);
             for(t = 0; t < total; ++t){
                 if(d[t] == s){
@@ -108,38 +111,47 @@ double* cluster(framewindow input, FILE *fp, FILE *fp2){
                     denom += 1.0;
 
                     fprintf(fp2,"%d\t%d\t%f\t%f\n",iters,s,detections[t].detect.x,detections[t].detect.y);
+
+                    ++cent_counter;
                 }
             }
 
-
             //printf("found all corresponding detections...\n");
            // save all centroids to txt file (1)
-            centroids[2*s] = numer_x/denom;
-            centroids[2*s+1] = numer_y/denom;
+            //centroids[2*s] = numer_x/denom;
+            //centroids[2*s+1] = numer_y/denom;
+            final_cents[s].x = numer_x/denom;
+            final_cents[s].y = numer_y/denom;
+
+            final_cents[s].crsd_dets = malloc(cent_counter*sizeof(box_new));
+            final_cents[s].detect_tracker = 0;
+
             //printf("x:%f\n",centroids[2*s]);
             //printf("y:%f\n",centroids[2*s+1]);
-            fprintf(fp2,"\t%d\t%f\t%f\n",s,centroids[2*s],centroids[2*s+1]); //might need to stick an extra new line here
+            fprintf(fp2,"\t%d\t%f\t%f\n",s,final_cents[s].x,final_cents[s].y); //might need to stick an extra new line here
         }
         printf("update step complete...\n");
         size_t flag = 0;
 
         while(d[flag] == d_old[flag]){
+
+            memcpy(&final_cents[d[flag]].crsd_dets[final_cents[d[flag]].detect_tracker],&detections[flag],sizeof(box_new));
+            ++final_cents[d[flag]].detect_tracker;
+
             if(flag == total-1){
-              
                 for(s = 0; s < input.size10; ++s){
                     printf("total:%d\n",total);
                     printf("cluster number:%d\n",s+1);
                     printf("iterations to cluster:%d\n",iters);
-                    printf("x:%f\n",centroids[2*s]);
-                    printf("y:%f\n",centroids[2*s+1]);
+                    printf("x:%f\n",final_cents[s].x);
+                    printf("y:%f\n",final_cents[s].y);
                     //save final centroids to txt file 
-                    fprintf(fp,"\t%f\t%f\n",centroids[2*s],centroids[2*s+1]);
+                    fprintf(fp,"\t%f\t%f\n",final_cents[s].x,final_cents[s].y);
 
-                    //save corresponding detections to centroid struct
                 }
                 fprintf(fp2,"done\n");
                 free(detections);
-                return (double *)centroids;
+                return (centroid*) final_cents;
             }
             else{
                 ++flag;
@@ -147,6 +159,9 @@ double* cluster(framewindow input, FILE *fp, FILE *fp2){
         }
         for(s = 0; s <total; ++s){
             d_old[s] = d[s];
+        }
+        for(t = 0; t < input.size10; ++t){
+            free(final_cents[t].crsd_dets);
         }
         fprintf(fp2,"\n");
     }
@@ -215,8 +230,9 @@ void frames_init(framewindow *input, box_new* bn, int frame_size_ten){
 
     //init box_ids
     for(i = 0; i < frame_size_ten; ++i){
-        (*input).frame10[i].box_id[0] = (char)(i);
-        (*input).frame10[i].box_id[1] = (char)(i);
+        //(*input).frame10[i].box_id[0] = (char)(i);
+        //(*input).frame10[i].box_id[1] = ("%c",i);
+        sprintf((*input).frame10[i].box_id,"%c%d",(char)i,i);
     }
 
 

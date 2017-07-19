@@ -51,9 +51,12 @@ typedef struct{
 
 typedef struct{
     box_new *crsd_dets;
+    double x;
+    double y;
+    size_t detect_tracker;
 } centroid;
 
-double* cluster(framewindow input, FILE *fp, FILE *fp2);
+centroid* cluster(framewindow input, FILE *fp, FILE *fp2);
 void frame_switch(framewindow *input, box_new* bn, int frame_size_ten);
 void frames_init(framewindow *input, box_new* bn, int frame_size_ten);
 void box_conversion(box* input, box_new* output, int counter);

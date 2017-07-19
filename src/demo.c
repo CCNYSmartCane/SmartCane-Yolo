@@ -49,7 +49,7 @@ static framewindow fw;
 box bs[100];
 box_new bn[100];
 box *temp;
-double *out;
+centroid *out;
 double *out_old;
 int cent_length;
 FILE *fp;
@@ -112,6 +112,7 @@ void *detect_in_thread(void *ptr)
     
 
     draw_detections(display, demo_detections, demo_thresh, boxes, probs, demo_names, demo_alphabet, demo_classes, &detects, bs);
+
     box_conversion(bs,bn,detects);
 
     if(detects > 0){
@@ -123,8 +124,8 @@ void *detect_in_thread(void *ptr)
             ++fw.init;
 
             for(i = 0; i < fw.size10; ++i){
-               cent_buff[2*m_cent] = out[2*i];
-               cent_buff[2*m_cent+1] = out[2*i+1];
+               cent_buff[2*m_cent] = out[i].x;
+               cent_buff[2*m_cent+1] = out[i].y;
                ++m_cent;
                 if(m_cent == 100) {
                  m_cent = 0;
@@ -132,7 +133,6 @@ void *detect_in_thread(void *ptr)
             } 
             n_cent = 0;
             while(n_cent < 100)
-            // while(abs(cent_buff[n_cent]) > 0.0000001 && n_cent < 100)
             {
                 double xn = cent_buff[2*n_cent];
                 double yn = cent_buff[2*n_cent+1];
@@ -152,9 +152,6 @@ void *detect_in_thread(void *ptr)
                 display.data[sx + sy + 2*display.w*display.h] = 0.196;
                 n_cent++;
             }
-            /* printf("sx: %f\nsy: %f\n",cent_buff[2*(m_cent-1)]*display.w, cent_buff[2*(m_cent-1)+1]*display.h);
-            printf("sx: %f\nsy: %f\n",out[0]*display.w,out[1]*display.h);
-            printf("sx: %d\nsy: %d\n", sx, sy / display.w); */
 
             free(out);
         }
