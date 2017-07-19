@@ -15,9 +15,6 @@ void box_conversion(box* input, box_new*output, int counter){ //input output siz
     }
 }
 
-void box_id_comparison(centroid* old_cents, centroid* new_cents){
-
-}
 
 double* cluster(framewindow input, FILE *fp, FILE *fp2){
     //box detections[845];
@@ -219,6 +216,7 @@ void frames_init(framewindow *input, box_new* bn, int frame_size_ten){
     //init box_ids
     for(i = 0; i < frame_size_ten; ++i){
         (*input).frame10[i].box_id[0] = (char)(i);
+        (*input).frame10[i].box_id[1] = (char)(i);
     }
 
 

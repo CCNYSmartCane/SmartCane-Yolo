@@ -12,7 +12,7 @@
 
 typedef struct{
     box detect;
-    char box_id[1];   
+    char box_id[2];   //alpha-numeric id (e.g. A0 - Z9)
 }box_new;
 
 typedef struct{
@@ -57,6 +57,5 @@ double* cluster(framewindow input, FILE *fp, FILE *fp2);
 void frame_switch(framewindow *input, box_new* bn, int frame_size_ten);
 void frames_init(framewindow *input, box_new* bn, int frame_size_ten);
 void box_conversion(box* input, box_new* output, int counter);
-void box_id_comparison(centroid* old, centroid* new);
 
 #endif
