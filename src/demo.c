@@ -12,7 +12,8 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <math.h>
-#include "cluster.h"
+//#include "cluster.h"
+#include "cluster_ex.h"
 #define DEMO 1
 
 #ifdef OPENCV
@@ -45,15 +46,11 @@ static float *last_avg2;
 static float *last_avg;
 static float *avg;
 double demo_time;
-static framewindow fw;
 box bs[100];
 box_new bn[100];
 box *temp;
-centroid *out;
 double *out_old;
 int cent_length;
-FILE *fp;
-FILE *fp2;
 FILE *fpa;
 FILE *fpb;
 int count;
@@ -64,6 +61,8 @@ int sx;
 int sy;
 char* cluster_names;
 char max_name = 'a';
+int flag;
+object* objs;
 
 double get_wall_time()
 {
@@ -81,7 +80,7 @@ void *detect_in_thread(void *ptr)
     sx = 0;
     sy = 0;
 
-    //fw.length++;
+
     running = 1;
     float nms = .4;
 
@@ -113,24 +112,31 @@ void *detect_in_thread(void *ptr)
 
     draw_detections(display, demo_detections, demo_thresh, boxes, probs, demo_names, demo_alphabet, demo_classes, &detects, bs);
 
-    box_conversion(bs,bn,detects);
+    //box conversion --to also be implemented in java
+    for(i = 0; i < detects; ++i){
+        bn[i].x = bs[i].x;
+        bn[i].y = bs[i].y;
+        bn[i].width = bs[i].w;
+        bn[i].height = bs[i].h;
+
+        bn[i].timestamp = get_wall_time();
+        bn[i].local_id = i;
+    }
 
     if(detects > 0){
-        if(fw.init >= 1){
-    
-            frame_switch(&fw,bn,detects);
-            out = cluster(fw,fpa,fpb);
-
-            ++fw.init;
-
-            for(i = 0; i < fw.size10; ++i){
-               cent_buff[2*m_cent] = out[i].x;
-               cent_buff[2*m_cent+1] = out[i].y;
+        if(flag >1){
+            objs = malloc(detects*sizeof(object));
+            tracking(detects, bn, objs, fpa, fpb);
+            printf("tracking function completed\n");
+            for(i = 0; i < detects; ++i){
+               cent_buff[2*m_cent] = objs[i].x;
+               cent_buff[2*m_cent+1] = objs[i].y;
                ++m_cent;
                 if(m_cent == 100) {
                  m_cent = 0;
                 }
             } 
+            printf("added to centroid buffer\n");
             n_cent = 0;
             while(n_cent < 100)
             {
@@ -152,18 +158,17 @@ void *detect_in_thread(void *ptr)
                 display.data[sx + sy + 2*display.w*display.h] = 0.196;
                 n_cent++;
             }
-
-            free(out);
+            free(objs);
         }
         else{
-            ++fw.init;                
-            frames_init(&fw,bn,detects);
-            printf("intialized for clustering 1\n");
+            ++flag;                
+            framewindow_init(detects, bn);
+            printf("framewindow init completed...\n");
         }
 
     } 
     else{
-        fw.init = 0;
+        flag = 0;
     }
     
 
@@ -265,7 +270,7 @@ void demo(char *cfgfile, char *weightfile, float thresh, int cam_index, const ch
     layer l = net.layers[net.n-1];
     demo_detections = l.n*l.w*l.h;
     int j;
-    fw.init = 0;
+    flag = 0;
     //fw.frame1 = malloc(sizeof(box[100]));
     //fw.frame2 = malloc(sizeof(box[100])); 
 
@@ -301,6 +306,8 @@ void demo(char *cfgfile, char *weightfile, float thresh, int cam_index, const ch
 
     fpa = fopen("FINAL_CENTROIDS.txt","w+");
     fpb = fopen("OBJ_FUNCTION.txt","w+");
+
+    tracking_vars_init(10); //called once to intialize size of frame window
 
 
     while(!demo_done){
