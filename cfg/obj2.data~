@@ -1,5 +1,0 @@
-classes = 1
-train = train_list_heads.txt
-valid = test_list_heads2.txt
-names = cfg/obj2.names
-backup = backup/
