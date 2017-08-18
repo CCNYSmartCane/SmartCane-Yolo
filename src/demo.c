@@ -124,7 +124,7 @@ void *detect_in_thread(void *ptr)
     }
 
     if(detects > 0){
-        if(flag >1){
+        if(flag >1){ // should it be flag >= 1
             objs = malloc(detects*sizeof(object));
             tracking(detects, bn, objs, fpa, fpb);
             printf("tracking function completed\n");
@@ -304,6 +304,8 @@ void demo(char *cfgfile, char *weightfile, float thresh, int cam_index, const ch
 
     demo_time = get_wall_time();
 
+    // todo: what's the saving format for these files
+    // list example here in the code
     fpa = fopen("FINAL_CENTROIDS.txt","w+");
     fpb = fopen("OBJ_FUNCTION.txt","w+");
 

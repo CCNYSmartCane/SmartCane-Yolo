@@ -1,35 +1,38 @@
-#include <stdlib.h>
-#include <stdio.h>
-#include <float.h>
-#include <string.h>
-#include <math.h>
-#include "darknet.h"
+
 #include "cluster.h"
 
 
 //#define DEBUG_RECORD
 //#define DEBUG_RECORD_FOLDER  /path/..
 
-typedef struct{
-    box_new* detections;
-    size_t numDetections;
-}frame;
-
-typedef struct{
-    box_new *crsd_dets; //a way to do comparison func without??
-    size_t num_dets;
-    box_new newest_dets;
-    double x;
-    double y;
-    double z;
-    size_t detect_tracker; // can we do without?
-    int cluster_id;
-}cluster;
-
 int FRAMEWINDOWSIZE;
 frame* FRAMEWINDOW;
 cluster* cluster_ptr;
+int CONTINUOUSCNT = 0;
 
+void tracking_vars_init(int framewindow_size){
+	set_framewindow_size(framewindow_size);
+	create_framewindow();
+}
+
+//To be called after first detection
+//Or if after zero detections are made (i.e. essentially a reset)
+void framewindow_init(int len, box_new* box_input){
+	frames_init(box_input, len);
+	CONTINUOUSCNT = 0;
+}
+
+// 'demo' uses this tracking(), while 'test' uses cluster2()?
+//To be called for all other subsequent detections
+bool tracking(int len, box_new* box_input, object* obs, FILE *fp, FILE *fp2){
+	bool flag = false;
+	frame_switch(box_input, len);
+	clustering(fp, fp2, len);
+	//objs_init(obs,len);
+	convert_clusts_2_objs(obs,len); //objs are update and can now be visualized
+	flag = true;
+	return flag;
+}
 
 bool clustering(FILE *fp, FILE *fp2, int cluster_num){
 
@@ -107,6 +110,7 @@ bool clustering(FILE *fp, FILE *fp2, int cluster_num){
 
         detection_counter = 0;
 
+        CONTINUOUSCNT++;
         /*UPDATE CENTROIDS TO MEANS OF EACH NEW CLUSTER*/
         for(s = 0; s < cluster_num; ++s){
             numer_x = 0.0;
@@ -119,6 +123,14 @@ bool clustering(FILE *fp, FILE *fp2, int cluster_num){
                 detections_per_frame = FRAMEWINDOW[t].numDetections;
                 for(u = 0; u < detections_per_frame; ++u){
                     if(new_clust_indices[detection_counter] == s){
+                    	if (1 ==  CONTINUOUSCNT) {
+                    		// when initially, or reset from none of detection
+							// in 1st, it's assigned by local_id
+                    		FRAMEWINDOW[t].detections[u].class_id = FRAMEWINDOW[t].detections[u].local_id;
+                    	} else {
+                    		// then, it's assigned with class_id mean of belonging cluster
+
+                    	}
                         // save x/y of detections for future calculation of obj func
                         numer_x += FRAMEWINDOW[t].detections[u].x;
                         numer_y += FRAMEWINDOW[t].detections[u].y;

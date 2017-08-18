@@ -1,37 +1,24 @@
 #ifndef CLUSTER_H
 #define CLUSTER_H
 
-#include <stdlib.h>
-#include <stdio.h>
-#include <float.h>
-#include <string.h>
-#include <math.h>
+#include "cluster_ex.h"
 #include "darknet.h"
-#include <stdbool.h>
 
 typedef struct{
+    box_new* detections;
+    size_t numDetections;
+}frame;
+
+typedef struct{
+    box_new *crsd_dets; //a way to do comparison func without??
+    size_t num_dets;
+    box_new newest_dets;
     double x;
     double y;
-    double width;
-    double height;
-
-    double depth;
-
-    int cluster_id;  // boxes in frame:1-9, the values are assigned after clustering, for frame 10 is 0xFFFFFFFF
-    double timestamp;
-    int local_id;  // e.g for a local frame, we got 3 boxes, assign them as 0, 1, 2 respectively
-}box_new;
-
-// as tracking output from JNI call
-typedef struct{
-    double x; //correspond to final centroid values
-    double y;
-    double depth;
-    double width;
-    double height;
-    int class_type;
+    double z;
+    size_t detect_tracker; // can we do without?
     int cluster_id;
-}object;
+}cluster;
 
 
 bool clustering(FILE *fp, FILE *fp2, int cluster_num); // return: cluster[] with size
