@@ -17,9 +17,9 @@ typedef struct{
 
     double depth;
 
-    int cluster_id;  // boxes in frame:1-9, the values are assigned after clustering, for frame 10 is 0xFFFFFFFF
-    double timestamp;
-    int local_id;  // e.g for a local frame, we got 3 boxes, assign them as 0, 1, 2 respectively
+    //int cluster_id;  // boxes in frame:1-9, the values are assigned after clustering, for frame 10 is 0xFFFFFFFF
+    double timestamp; //assigned in demo.c
+    int local_id;  // e.g for a local frame, we got 3 boxes, assign them as 0, 1, 2 respectively; assigned in demo.c
     int class_id;  // in 1st, it's assigned by local_id
                    // then, it's assigned by the mean of it's belonging cluster
 }box_new;
@@ -33,7 +33,7 @@ typedef struct{
     double height;
     int class_type; // like: person, cup, ...
     int class_id;   // like: 0, 1, 2, ... (as a continuous & unique id)
-    int cluster_id; // diff with in box_new?
+    //int cluster_id; // diff with in box_new?
 }object;
 
 // are we able to use structure for JNI?

@@ -10,14 +10,14 @@ typedef struct{
 }frame;
 
 typedef struct{
-    box_new *crsd_dets; //a way to do comparison func without??
+    //box_new *crsd_dets; //a way to do comparison func without??
     size_t num_dets;
     box_new newest_dets;
     double x;
     double y;
     double z;
     size_t detect_tracker; // can we do without?
-    int cluster_id;
+    int class_id;
 }cluster;
 
 
