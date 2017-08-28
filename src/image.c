@@ -190,18 +190,14 @@ image **load_alphabet()
     return alphabets;
 }
 
-void draw_detections(image im, int num, float thresh, box *boxes, float **probs, char **names, image **alphabet, int classes, int* detects, box* bs)
+void draw_detections(image im, int num, float thresh, box *boxes, float **probs, char **names, image **alphabet, int classes)
 {
     int i;
-    int j = 0;
 
     for(i = 0; i < num; ++i){
         int class = max_index(probs[i], classes);
         float prob = probs[i][class];
         if(prob > thresh){
-            (*detects)++;
-            bs[j] = boxes[i];
-            ++j;
 
             int width = im.h * .012;
 
@@ -212,17 +208,17 @@ void draw_detections(image im, int num, float thresh, box *boxes, float **probs,
 
             //printf("%d %s: %.0f%%\n", i, names[class], prob*100);
             printf("%s: %.0f%%\n", names[class], prob*100);
-            int offset = class*123457 % classes; //123457
-            float red = (float)get_color(2,offset,classes);
-            float green = (float)get_color(1,offset,classes);
-            float blue = (float)get_color(0,offset,classes);
+            int offset = class*123457 % classes;
+            float red = get_color(2,offset,classes);
+            float green = get_color(1,offset,classes);
+            float blue = get_color(0,offset,classes);
             float rgb[3];
-            //printf("r:%fg:%fb:%f",red,green,blue);
+
             //width = prob*20+2;
 
-            rgb[0] = (float)red;
-            rgb[1] = (float)green;
-            rgb[2] = (float)blue;
+            rgb[0] = red;
+            rgb[1] = green;
+            rgb[2] = blue;
             box b = boxes[i];
 
             int left  = (b.x-b.w/2.)*im.w;
@@ -234,15 +230,10 @@ void draw_detections(image im, int num, float thresh, box *boxes, float **probs,
             if(right > im.w-1) right = im.w-1;
             if(top < 0) top = 0;
             if(bot > im.h-1) bot = im.h-1;
-            char in[25];
-            char tmp[25];
-            strcpy(tmp,names[class]);
-            sprintf(in," %d",j);
-            strcat(tmp,in);
 
             draw_box_width(im, left, top, right, bot, width, red, green, blue);
             if (alphabet) {
-                image label = get_label(alphabet, tmp, (im.h*.03)/10);
+                image label = get_label(alphabet, names[class], (im.h*.03)/10);
                 draw_label(im, top + width, left, label, rgb);
                 free_image(label);
             }
@@ -510,7 +501,6 @@ void ipl_into_image(IplImage* src, image im)
     int step = src->widthStep;
     int i, j, k;
 
-
     for(i = 0; i < h; ++i){
         for(k= 0; k < c; ++k){
             for(j = 0; j < w; ++j){
@@ -541,7 +531,7 @@ image load_image_cv(char *filename, int channels)
         fprintf(stderr, "OpenCV can't force load with %d channels\n", channels);
     }
 
-    if( (src = cvLoadImage(filename, flag )) == 0 )
+    if( (src = cvLoadImage(filename, flag)) == 0 )
     {
         fprintf(stderr, "Cannot load image \"%s\"\n", filename);
         char buff[256];

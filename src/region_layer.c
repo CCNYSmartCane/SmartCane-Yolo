@@ -345,7 +345,6 @@ void correct_region_boxes(box *boxes, int n, int w, int h, int netw, int neth, i
         }
         boxes[i] = b;
     }
-    //printf("Number of detections:%d\n",n);
 }
 
 void get_region_boxes(layer l, int w, int h, int netw, int neth, float thresh, float **probs, box *boxes, int only_objectness, int *map, float tree_thresh, int relative)
@@ -375,7 +374,6 @@ void get_region_boxes(layer l, int w, int h, int netw, int neth, float thresh, f
             l.output[i] = (l.output[i] + flip[i])/2.;
         }
     }
-
     for (i = 0; i < l.w*l.h; ++i){
         int row = i / l.w;
         int col = i % l.w;
@@ -430,7 +428,6 @@ void get_region_boxes(layer l, int w, int h, int netw, int neth, float thresh, f
         }
     }
     correct_region_boxes(boxes, l.w*l.h*l.n, w, h, netw, neth, relative);
-
 }
 
 #ifdef GPU
